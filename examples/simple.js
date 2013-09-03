@@ -8,3 +8,4 @@ var config = require('../index');
 config.load(__dirname + '/config.js');
 
 console.log(util.inspect(config, { showHidden: false, depth: null, colors: true }));
+
