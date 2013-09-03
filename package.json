@@ -1,0 +1,26 @@
+{
+  "name": "a.config",
+  "version": "0.0.1",
+  "description": "Node.js Config System",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "dependencies": {
+    "js-yaml": "~2.1.0"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/a696385/a.config.git"
+  },
+  "keywords": [
+    "Config",
+    "Yaml"
+  ],
+  "author": "andy@away.name",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/a696385/a.config/issues"
+  }
+}
