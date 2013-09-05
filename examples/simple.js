@@ -5,7 +5,8 @@
 var util = require('util');
 var config = require('../index');
 
-config.load(__dirname + '/config.js');
+config.load(__dirname + '/config.yaml');
 
-console.log(util.inspect(config, { showHidden: false, depth: null, colors: true }));
+//console.log(util.inspect(config, { showHidden: false, depth: null, colors: true }));
+console.log(JSON.stringify(config));
 
