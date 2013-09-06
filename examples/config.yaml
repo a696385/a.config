@@ -51,9 +51,10 @@ prog12:
     all,info,debug,error,warn:
       - mongo:
           $replace: :$config.prog12.mongo
-          ttl: 3
+          format:
+            name: new
   redfog.bidder.index:
     $extend: redfog
     all,info,debug,error,warn:
       - mongo:
-          $extend: :$config.ttl.default
+          $extend: :$config.prog12.mongo
