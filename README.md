@@ -1,225 +1,227 @@
 a.config - Node.js config system
 ========
 
-Installation
-------------
+Configuration system for Node.js Applications
 
-### A.Config module for node.js
+Introduction
+---------------------------------------
 
+Configuration system created for systematization of the configuration files. You can simply extend, edit and monipalte yours configs.
+
+Usage
+---------------------------------------
+**Install using npm**
+```bash
+project$ npm install a.config
 ```
-npm install a.config
+
+You can write yours configs in `js`, `json`, `yaml`.
+
+**Example config file**
+```yaml
+# Inner vars
+$config:
+
+  default.format.processor: 'default'
+  default.format.value: '%level %date %args %code'
+
+  production:
+    mongo:
+      uri: 'mongodb://localhost.loc:27017/log'
+      ttl: 604800
+      format:
+        name: 'mongo'
+        value: '%level, %module, %hostname, %args, %code, %trace, %errors'
+
+  development:
+    $extend: production # Extend production and change mongo.uri, mongo.ttl
+    mongo:
+      uri: 'mongodb://localhost:27017/log'
+      ttl: 600
+
+  prog12:
+    $extend: development # Extend development and change mongo.uri
+    mongo:
+      uri: 'mongodb://localhost:27030/log'
+
+# Logger System Configurations
+default:
+  all:
+    console: true
+    syslog: true
+
+production:
+  $extend: default # Extend default and append app property
+  app:
+    all,info,debug:
+      - mongo:
+         $extend: :$config.production.mongo # Extend $config.production.mongo
+      - console: true
+    error,warn:
+      - mongo:
+         $extend: :$config.production.mongo # Extend $config.production.mongo
+        syslog: true
+      - console: true
+development:
+  $extend: default # Extend default and update app property
+  app:
+    $replace: :production.app # Extend from production.app, with full change same properties
+    all,info,debug:
+      - console: true  
 ```
 
-#### Usage
-
+**Load configuration file**
 ```javascript
 var config = require('a.config');
-
-config.load(__dirname + '/config.js');
-
-console.log(config);
+config.load(__dirname + '/config.yaml');
 ```
-
-API
----
-
-You can use keywords for extend your configs:
-
-`$extends` - Extend current object with another object. You can use `:` to find object in root or not use for current lavel
-
-**Example**
-
-Original
+After config loading you can use this in all application
 ```javascript
-module.exports = {
-    production: {
-        server: {
-            host: 'localhost',
-            port: 3003
-        }
-    },
+var config = require('a.config');
+console.log(config.default.all);
 
-    development: { $extends: 'production',
-        server: {
-            port: 3002,
-            options: { someOpt: false }
-        }
-    }
-};
+//{console: true, syslog: true}
 ```
-Result
+For creation new instance of config object and load different config use `newInstance()`
 ```javascript
+var config = require('a.config');
+config.load(__dirname + '/config.yaml');
+
+var exConfig = config.newInstance();
+exConfig.load(__dirname + '/config.ex.yaml');
+
+console.log(config.default.all);
+//{console: true, syslog: true}
+
+console.log(exConfig.default);
+//undefined
+```
+**Extends**
+
+
+For convenient use configurations used rashireniem:
+
+* `$extend` - Extend current object, you must specify the name of the object. You can use local name(objects in same level) or name from root. For root location use `:` before name of object.
+    
+    *Example*
+```yaml
+	production:
+	  mongo:
+	    uri: 'mongodb://localhost.loc:27017/log'
+	    ttl: 604800
+	    format:
+	      name: 'mongo'
+	      value: '%level, %module, %hostname, %args, %code, %trace, %errors'
+	
+	development:
+	  $extend: production
+	  mongo:
+	    uri: 'mongodb://localhost:27017/log'
+	    ttl: 600
+	
+	user:
+	  mongo:
+	    $extend: :production.mongo
+```
+```json
 {
-	"production": {
-		"server": {
-			"host": "localhost",
-			"port": 3003
-		}
-	},
-	"development": {
-		"server": {
-			"port": 3002,
-			"options": {
-				"someOpt": false
-			},
-			"host": "localhost"
-		}
-	}
-}
-```
-
-`$inner` - For replace full object in `$extend` you must set to `false` in parent or child settings
-
-**Example**
-
-Original
-```javascript
-module.exports = {
-    production: {
-        server: {
-            host: 'localhost',
-            port: 3003,
-            options: { $inner: false,
-              auto_reconnect: true
+    "production": {
+        "mongo": {
+            "uri": "mongodb://localhost.loc:27017/log",
+            "ttl": 604800,
+            "format": {
+                "name": "mongo",
+                "value": "%level, %module, %hostname, %args, %code, %trace, %errors"
             }
         }
     },
-
-    development: { $extends: 'production', // or $extends: ':production' in current exmaple be right
-        server: {
-            port: 3002,
-            options: { native_parser: false }
+    "development": {
+        "mongo": {
+            "uri": "mongodb://localhost:27017/log",
+            "ttl": 600,
+            "format": {
+                "name": "mongo",
+                "value": "%level, %module, %hostname, %args, %code, %trace, %errors"
+            }
+        }
+    },
+    "user": {
+        "mongo": {
+            "uri": "mongodb://localhost.loc:27017/log",
+            "ttl": 604800,
+            "format": {
+                "name": "mongo",
+                "value": "%level, %module, %hostname, %args, %code, %trace, %errors"
+            }
         }
     }
-};
-```
-Result
-```javascript
-{
-	"production": {
-		"server": {
-			"host": "localhost",
-			"port": 3003,
-			"options": {
-				"auto_reconnect": true
-			}
-		}
-	},
-	"development": {
-		"server": {
-			"port": 3002,
-			"options": {
-				"native_parser": false
-			},
-			"host": "localhost"
-		}
-	}
 }
 ```
 
-`$include` - Use for include some else config file, remember include extend current object with comilled config file 
-
-
-**Example**
-
-Original
-```javascript
-module.exports = {
-    production: { $include: 'config.production.js',
-        server: {
-            port: 3003
-        },
-        servers: {$inner: false,
-            server1: {
-                host: '127.0.0.1'
+* `$replace` - Same as `$extend`, but it will rewrite all object
+    
+    *Example*
+```yaml
+	production:
+	  mongo:
+	    uri: 'mongodb://localhost.loc:27017/log'
+	    ttl: 604800
+	    format:
+	      name: 'mongo'
+	      value: '%level, %module, %hostname, %args, %code, %trace, %errors'
+	
+	user:
+	  mongo:
+	    $replace: :production.mongo
+	    format:
+	      caption: 'caption'
+```
+```json
+{
+    "production": {
+        "mongo": {
+            "uri": "mongodb://localhost.loc:27017/log",
+            "ttl": 604800,
+            "format": {
+                "name": "mongo",
+                "value": "%level, %module, %hostname, %args, %code, %trace, %errors"
+            }
+        }
+    },
+    "user": {
+        "mongo": {
+            "format": {
+                "caption": "caption"
             },
-            server2: {
-                host: '127.0.0.2'
-            }
-        },
-        server3: {a1: true}
-    },
-
-    development: { $extends: 'production',
-        server: {
-            port: 3002,
-            options: { $inner: false,
-                someOpt3: false
-            }
-        },
-        servers: {
-            server3: {
-                host: '127.0.0.3'
-            }
+            "uri": "mongodb://localhost.loc:27017/log",
+            "ttl": 604800
         }
     }
-};
-```
-Result
-```javascript
-{
-	"production": {
-		"server": {
-			"port": 3003,
-			"host": "localhost",
-			"options": {
-				"someOpt1": true,
-				"someOpt2": [
-					"a1",
-					"a2"
-				]
-			}
-		},
-		"servers": {
-			"server1": {
-				"host": "127.0.0.1"
-			},
-			"server2": {
-				"host": "127.0.0.2"
-			}
-		},
-		"server3": {
-			"a1": true
-		}
-	},
-	"development": {
-		"server": {
-			"port": 3002,
-			"options": {
-				"someOpt3": false
-			},
-			"host": "localhost"
-		},
-		"servers": {
-			"server3": {
-				"host": "127.0.0.3"
-			}
-		},
-		"server3": {
-			"a1": true
-		}
-	}
 }
 ```
 
+* `$include` - Include some else file into current object. Use path relative to the current config
+    
+    *Example*
+```yaml
+	production:
+	  mongo:
+	    uri: 'mongodb://localhost.loc:27017/log'
+	    ttl: 604800
+	    format:
+	      name: 'mongo'
+	      value: '%level, %module, %hostname, %args, %code, %trace, %errors'
+	
+	user:
+	  mongo:
+	    $include: './configs/mongo.yaml'
+```
 
-The MIT License (MIT)
+License
+---------------------------------------
 
-Copyright (c) 2013 Andrew Sumskoy <andy@away.name>
+May be freely distributed under the MIT license
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
+See `LICENSE` file
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+Copyright (c) 2013 - Sumskoy Andrew <andy@away.name>
