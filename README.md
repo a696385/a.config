@@ -8,6 +8,8 @@ Introduction
 
 Configuration system created for systematization of the configuration files. You can simply extend, edit and monipalte yours configs.
 
+[Wiki pages](https://github.com/a696385/a.config/wiki "Wiki")
+
 Usage
 ---------------------------------------
 **Install using npm**
@@ -216,6 +218,7 @@ For convenient use configurations used rashireniem:
 	  mongo:
 	    $include: './configs/mongo.yaml'
 ```
+
 
 License
 ---------------------------------------
