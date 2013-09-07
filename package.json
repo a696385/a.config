@@ -1,6 +1,6 @@
 {
   "name": "a.config",
-  "version": "0.0.3",
+  "version": "0.1.3",
   "description": "Node.js Config System",
   "main": "index.js",
   "directories": {
